@@ -311,7 +311,10 @@ if run_button:
             amount_cols = [
                 "Deduction Amount (C)",
                 "EFT Amount for Invoice (D)",
-                "TDS (B)"
+                "TDS (B)",
+                "TDSAmount",
+                "DeductionAmount",
+                "CheckAmount"
             ]
         
             # Standardize amount columns
