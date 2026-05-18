@@ -308,7 +308,8 @@ if run_button:
                 final_df[other_cols]
                 .fillna("")
                 .astype(str)
-                .apply(lambda x: x.str.strip())
+                .apply(lambda col: col.str.strip())
+                .replace(["nan", "None"], "")
                 .eq("")
                 .all(axis=1)
             )
