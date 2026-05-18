@@ -75,7 +75,9 @@ column_mapping_config = {
     "Outstanding Amount (A)": "OutstandingAmount",
     "Branch": "SOLocn",
     "Deduction reason": "ReasonCode",
-    "TDS %": "TDS"
+    "TDS %": "TDS",
+    "EFT Amount for Invoice (D)": "CheckAmount",
+    "TDS (B)": "TDSAmount"
 }
 
 if run_button:
