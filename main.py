@@ -268,6 +268,15 @@ if run_button:
         # 1. Entire row is null/blank
         # AND
         # 2. DeductionAmount is 0/blank
+
+        try:
+            final_df = pd.concat(df_list, ignore_index=True)
+
+        except Exception as e:
+            st.error(f"Error concatenating dataframes: {e}")
+            st.stop()
+
+        time.sleep(0.5)
         
         try:
         
@@ -313,14 +322,7 @@ if run_button:
         
 
         # Concatenate dataframes
-        try:
-            final_df = pd.concat(df_list, ignore_index=True)
-
-        except Exception as e:
-            st.error(f"Error concatenating dataframes: {e}")
-            st.stop()
-
-        time.sleep(0.5)
+        
 
         status_text.info("Generating output Excel file...")
 
