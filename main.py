@@ -51,7 +51,10 @@ final_output_columns = [
     "Deduction Amount (C)",
     "Deduction reason",
     "TDS %",
-    "EFT Amount for Invoice (D)"
+    "EFT Amount for Invoice (D)",
+    "Branch Remarks",
+    "Branch",
+    "Payment"
 ]
 if run_button:
 
@@ -306,6 +309,30 @@ if run_button:
         
 
         status_text.info("Generating output Excel file...")
+        try:
+
+            final_df = final_df.rename(columns={
+        
+                "EFT Date": "DepositDate",
+                "EFT/Cheque No to be Claimed": "CheckNo",
+                "Client Code": "AccountCustomer",
+                "EFT Amount": "DepositAmount",
+                "Branch Remarks": "PaymentMethod",
+                "Invoice Number": "InvoiceNo",
+                "Branch": "SOLocn",
+                "Invoice Amount": "Inv Amt",
+                "Outstanding Amount (A)": "OutstandingAmount",
+                "TDS (B)": "TDSAmount",
+                "Deduction Amount (C)": "DeductionAmount",
+                "Payment": "CheckAmount",
+                "Deduction reason": "ReasonCode",
+                "TDS %": "TDS"
+        
+            })
+        
+        except Exception as e:
+            st.error(f"Error during final column renaming: {e}")
+            st.stop()
 
         # Generate CSV output
         try:
