@@ -319,7 +319,21 @@ if run_button:
         except Exception as e:
             st.error(f"Error filtering blank rows: {e}")
             st.stop()
+
+        # Remove fully blank rows
+        try:
         
+            final_df = final_df.replace(
+                ["", " ", "nan", "None"],
+                pd.NA
+            )
+        
+            final_df = final_df.dropna(how="all")
+        
+        except Exception as e:
+            st.error(f"Error removing fully blank rows: {e}")
+            st.stop()
+                
 
         # Concatenate dataframes
         
