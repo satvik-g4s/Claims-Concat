@@ -146,23 +146,24 @@ if run_button:
 
             # Match sheet name
             target_sheet_name = None
-
+            
             try:
                 for sheet_name in actual_sheet_names:
-
-                    if (
+            
+                    normalized_sheet_name = (
                         str(sheet_name)
                         .strip()
                         .lower()
-                        == file_name_first_word_raw
-                    ):
+                        .split()[0]
+                    )
+            
+                    if normalized_sheet_name == file_name_first_word_raw:
                         target_sheet_name = sheet_name
                         break
-
+            
             except Exception as e:
                 st.error(f"Error during sheet matching process: {e}")
                 st.stop()
-
             # Validate matched sheet
             if target_sheet_name is None:
                 st.error(
