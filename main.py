@@ -281,18 +281,27 @@ if run_button:
         time.sleep(0.5)
         
         try:
+
+            amount_cols = [
+                "DeductionAmount",
+                "CheckAmount",
+                "TDSAmount"
+            ]
         
-            final_df["DeductionAmount"] = (
-                final_df["DeductionAmount"]
-                .astype(str)
-                .str.replace(",", "", regex=False)
-                .str.strip()
-            )
+            # Standardize amount columns
+            for col in amount_cols:
         
-            # Check if all columns except DeductionAmount are blank
+                final_df[col] = (
+                    final_df[col]
+                    .astype(str)
+                    .str.replace(",", "", regex=False)
+                    .str.strip()
+                )
+        
+            # Check all NON-amount columns are blank
             other_cols = [
                 col for col in final_df.columns
-                if col != "DeductionAmount"
+                if col not in amount_cols
             ]
         
             other_cols_blank = (
@@ -304,25 +313,31 @@ if run_button:
                 .all(axis=1)
             )
         
-            deduction_zero = final_df["DeductionAmount"].isin([
-                "",
-                "0",
-                "0.0",
-                "0.00",
-                "nan",
-                "None"
-            ])
+            # Check all amount columns are blank/0
+            amount_cols_zero_blank = (
+                final_df[amount_cols]
+                .isin([
+                    "",
+                    "0",
+                    "0.0",
+                    "0.00",
+                    "nan",
+                    "None"
+                ])
+                .all(axis=1)
+            )
         
-            # Remove only where BOTH conditions are true
+            # Remove rows only where BOTH conditions are true
             final_df = final_df[
-                ~(other_cols_blank & deduction_zero)
+                ~(other_cols_blank & amount_cols_zero_blank)
             ]
         
         except Exception as e:
             st.error(f"Error filtering blank rows: {e}")
-            st.stop()
-
+            st.stop()        
+            
         # Remove fully blank rows
+            
         try:
         
             final_df = final_df.replace(
