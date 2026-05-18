@@ -329,6 +329,9 @@ if run_button:
                 "TDS %": "TDS"
         
             })
+            # Duplicate columns from same source
+            if "AccountCustomer" in final_df.columns:
+                final_df["CustomerCode"] = final_df["AccountCustomer"]
         
         except Exception as e:
             st.error(f"Error during final column renaming: {e}")
