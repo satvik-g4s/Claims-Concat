@@ -18,18 +18,15 @@ uploaded_files = st.file_uploader(
 st.caption(
     """
     Expected Structure:
-    - Each uploaded Excel file must contain a sheet whose name matches the first word
-      of the uploaded file name (case-insensitive).
-    - Example:
-        File Name: ABC_Invoice.xlsx
-        Required Sheet Name: ABC
+    - Each uploaded Excel file must contain a sheet whose name matches
+      the first word of the uploaded file name (case-insensitive).
 
-    Required Columns:
-    Company Code, DepositDate, BankReference, CheckNo, AccountCustomer,
-    DepositAmount, CompanyLoc, InstrumentPrefix, PaymentMethod,
-    DepositSlipNo, BankLocation, BankNo, CheckDate, CustomerCode,
-    InvoiceNo, CheckAmount, TDSAmount, DeductionAmount,
-    OutstandingAmount, ARLocn, SOLocn, ReasonCode, TDS, Invoice_type
+    Example:
+    File Name: Bangalore Collection.xlsx
+    Required Sheet Name: Bangalore
+
+    The tool automatically maps source columns into a standardized output structure.
+    Missing columns will be created as blank.
     """
 )
 
@@ -37,7 +34,7 @@ run_button = st.button("Run")
 
 log_container = st.container()
 
-# Define required columns
+# Final required output columns
 columns_to_read = [
     'Company Code',
     'DepositDate',
@@ -65,8 +62,21 @@ columns_to_read = [
     'Invoice_type'
 ]
 
-# Define dtype mapping
-dtype_mapping = {col: str for col in columns_to_read}
+# Source Column -> Output Column Mapping
+column_mapping_config = {
+    "EFT Date": "DepositDate",
+    "EFT/Cheque No to be Claimed": "CheckNo",
+    "Client Code": "AccountCustomer",
+    "EFT Amount": "DepositAmount",
+    "Branch Remarks": "PaymentMethod",
+    "Client Code": "CustomerCode",
+    "Invoice Number": "InvoiceNo",
+    "Deduction Amount (C)": "DeductionAmount",
+    "Outstanding Amount (A)": "OutstandingAmount",
+    "Branch": "SOLocn",
+    "Deduction reason": "ReasonCode",
+    "TDS %": "TDS"
+}
 
 if run_button:
 
@@ -170,11 +180,6 @@ if run_button:
             # Header detection within first 10 rows
             header_found = False
 
-            normalized_required_cols = [
-                str(col).strip().lower().replace("\n", " ")
-                for col in columns_to_read
-            ]
-
             for row_num in range(10):
 
                 try:
@@ -182,60 +187,59 @@ if run_button:
                         io.BytesIO(file_content),
                         sheet_name=target_sheet_name,
                         header=row_num,
-                        dtype=dtype_mapping
+                        dtype=str
                     )
 
-                    # Normalize dataframe columns
-                    normalized_temp_cols = [
-                        str(col).strip().lower().replace("\n", " ")
-                        for col in temp_df.columns
-                    ]
+                    # Create standardized dataframe
+                    df_temp = pd.DataFrame()
 
-                    # Mapping normalized -> original
-                    column_mapping = {
-                        str(col).strip().lower().replace("\n", " "): col
-                        for col in temp_df.columns
-                    }
+                    # Loop through final required columns
+                    for output_col in columns_to_read:
 
-                    # Check all required columns exist
-                    if all(
-                        col in normalized_temp_cols
-                        for col in normalized_required_cols
-                    ):
+                        source_col = None
 
-                        selected_original_cols = [
-                            column_mapping[col]
-                            for col in normalized_required_cols
-                        ]
+                        # Direct column match
+                        for actual_col in temp_df.columns:
 
-                        df_temp = temp_df[selected_original_cols]
+                            if (
+                                str(actual_col).strip().lower()
+                                == output_col.strip().lower()
+                            ):
+                                source_col = actual_col
+                                break
 
-                        # Rename columns back to standard names
-                        df_temp.columns = columns_to_read
+                        # Mapping-based match
+                        if source_col is None:
 
-                        header_found = True
-                        break
+                            for source_name, mapped_name in column_mapping_config.items():
+
+                                if mapped_name == output_col:
+
+                                    for actual_col in temp_df.columns:
+
+                                        if (
+                                            str(actual_col).strip().lower()
+                                            == source_name.strip().lower()
+                                        ):
+                                            source_col = actual_col
+                                            break
+
+                        # Populate column
+                        if source_col is not None:
+                            df_temp[output_col] = temp_df[source_col]
+                        else:
+                            df_temp[output_col] = ""
+
+                    header_found = True
+                    break
 
                 except Exception:
                     continue
 
-            # Validate header found
+            # Validate processing
             if not header_found:
                 st.error(
-                    f"Required headers not found within first 10 rows "
-                    f"in file {file_obj.name}"
-                )
-                st.stop()
-
-            # Final column validation
-            missing_cols = [
-                col for col in columns_to_read
-                if col not in df_temp.columns
-            ]
-
-            if missing_cols:
-                st.error(
-                    f"Missing columns in file {file_obj.name}: {missing_cols}"
+                    f"Could not process headers in file {file_obj.name}"
                 )
                 st.stop()
 
@@ -320,12 +324,10 @@ if run_button:
 with st.expander("What This Tool Does"):
 
     st.write("""
-    This tool uploads multiple Excel files, validates sheet names,
-    reads the required columns, and concatenates all records into
-    a single consolidated output file.
+    This tool uploads multiple Excel files, automatically maps source columns,
+    standardizes the structure, and combines all records into a single output file.
 
-    The tool automatically detects the matching sheet based on
-    the uploaded file name.
+    Missing columns are automatically created as blank to ensure consistent output.
     """)
 
 with st.expander("How to Use"):
@@ -334,35 +336,34 @@ with st.expander("How to Use"):
     1. Upload one or more Excel files.
     2. Ensure each file contains the required sheet.
     3. Click Run.
-    4. Download the final combined output file.
+    4. Download the combined output file.
     """)
 
 with st.expander("Output Details"):
 
     st.write("""
     The output contains:
-    - Combined rows from all uploaded files
-    - Standardized column structure
-    - Customer transaction details
-    - Invoice references
-    - Payment and deduction information
-    - Consolidated financial dataset
+    - Standardized financial transaction records
+    - Customer and invoice details
+    - Payment information
+    - Deduction and outstanding amounts
+    - Consolidated master dataset
 
-    All files are merged vertically into one master report.
+    All uploaded files are vertically merged into one report.
     """)
 
 with st.expander("Financial Logic"):
 
     st.write("""
-    The process consolidates financial transaction records while preserving:
+    The tool standardizes and consolidates financial transaction data while preserving:
 
-    - Deposit references
+    - Deposit details
     - Customer mappings
-    - Invoice numbers
-    - TDS and deduction values
+    - Invoice references
     - Outstanding balances
-    - Bank information
-    - Payment methods
+    - Deduction information
+    - TDS values
+    - Branch and payment information
 
-    This supports reconciliation, reporting, and downstream finance operations.
+    Missing fields are automatically generated as blank values.
     """)
