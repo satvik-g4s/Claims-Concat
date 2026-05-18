@@ -245,6 +245,22 @@ if run_button:
                         unclaimed_df = unclaimed_df.drop_duplicates(
                             subset=["EFTNO"]
                         )
+
+                        st.write("Claims EFT Sample:")
+                        st.write(
+                            df_temp["EFT/Cheque No to be Claimed"]
+                            .dropna()
+                            .astype(str)
+                            .head(10)
+                        )
+                        
+                        st.write("Unclaimed EFTNO Sample:")
+                        st.write(
+                            unclaimed_df["EFTNO"]
+                            .dropna()
+                            .astype(str)
+                            .head(10)
+                        )
                         
                         # Merge
                         df_temp = df_temp.merge(
