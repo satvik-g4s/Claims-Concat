@@ -17,6 +17,8 @@ uploaded_files = st.file_uploader(
 
 st.caption(
     """
+    Upload claims files for all locations here.
+
     Expected Structure:
     - Each uploaded Excel file must contain a sheet whose name matches
       the first word of the uploaded file name (case-insensitive).
@@ -25,8 +27,7 @@ st.caption(
     File Name: Bangalore Collection.xlsx
     Required Sheet Name: Bangalore
 
-    The tool automatically maps source columns into a standardized output structure.
-    Missing columns will be created as blank.
+    Required Columns: EFT/Cheque No to be Claimed, EFT Amount, EFT Date, Invoice Number, Invoice Amount, Outstanding Amount (A), Client Code, Client name, Invoice amount to be adjust, TDS (B), Deduction Amount (C), Deduction reason, TDS %, EFT Amount for Invoice (D)
     """
 )
 
