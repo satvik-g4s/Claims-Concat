@@ -3,7 +3,7 @@ import pandas as pd
 import io
 import time
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")#g
 
 st.title("Multi File Excel Concatenation Tool")
 
@@ -276,21 +276,19 @@ if run_button:
 
         status_text.info("Generating output Excel file...")
 
-        # Generate output file
+        # Generate CSV output
         try:
-            output = io.BytesIO()
-
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                final_df.to_excel(
-                    writer,
-                    index=False,
-                    sheet_name='Combined_Data'
-                )
-
-            output.seek(0)
-
+            output = io.StringIO()
+        
+            final_df.to_csv(
+                output,
+                index=False
+            )
+        
+            csv_data = output.getvalue()
+        
         except Exception as e:
-            st.error(f"Error generating output file: {e}")
+            st.error(f"Error generating CSV file: {e}")
             st.stop()
 
         status_text.success(
@@ -299,10 +297,10 @@ if run_button:
         )
 
         st.download_button(
-            label="Download Combined Excel File",
-            data=output,
-            file_name="combined_output.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            label="Download Combined CSV File",
+            data=csv_data,
+            file_name="combined_output.csv",
+            mime="text/csv"
         )
 
         st.markdown("### Combined Data Preview")
