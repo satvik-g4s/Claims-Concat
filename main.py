@@ -246,34 +246,15 @@ if run_button:
                             subset=["EFTNO"]
                         )
 
-                        st.text(
-                            "Claims EFT Sample:\n" +
-                            "\n".join(
-                                df_temp["EFT/Cheque No to be Claimed"]
-                                .dropna()
-                                .astype(str)
-                                .head(20)
-                                .tolist()
-                            )
-                        )
-                        
-                        st.text(
-                            "Unclaimed EFTNO Sample:\n" +
-                            "\n".join(
-                                unclaimed_df["EFTNO"]
-                                .dropna()
-                                .astype(str)
-                                .head(20)
-                                .tolist()
-                            )
-                        )
+
                         
                         # Merge
                         df_temp = df_temp.merge(
                             unclaimed_df,
                             how="left",
                             left_on="EFT/Cheque No to be Claimed",
-                            right_on="EFTNO"
+                            right_on="EFTNO",
+                            suffixes=("", "_unclaimed")
                         )
                     
                     except Exception as e:
@@ -398,6 +379,7 @@ if run_button:
         
 
         status_text.info("Generating output Excel file...")
+'''
         try:
     
             final_df = final_df.rename(columns={
@@ -417,11 +399,13 @@ if run_button:
                 "Deduction reason": "ReasonCode",
                 "TDS %": "TDS",
         
-                "BankRef": "DepositSlipNo",
-                "BankName": "BankLocation",
-                "BankCode": "BankNo"
+                "BankRef_unclaimed": "DepositSlipNo",
+                "BankName_unclaimed": "BankLocation",
+                "BankCode_unclaimed": "BankNo"
         
             })
+
+            
         
             # Duplicate columns
             if "AccountCustomer" in final_df.columns:
@@ -475,7 +459,7 @@ if run_button:
         except Exception as e:
             st.error(f"Error during final processing: {e}")
             st.stop()
-
+'''
         # Generate CSV output
         try:
             output = io.StringIO()
