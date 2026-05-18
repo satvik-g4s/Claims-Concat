@@ -54,7 +54,11 @@ final_output_columns = [
     "EFT Amount for Invoice (D)",
     "Branch Remarks",
     "Branch",
-    "Payment"
+    "Payment",
+    "BankName",
+    "BankCode",
+    "BankRef",
+    "EFTNO"
 ]
 if run_button:
 
@@ -190,6 +194,60 @@ if run_button:
                         else:
                             df_temp[output_col] = ""
                     header_found = True
+                    # Merge Unclaimed Payment sheet
+                    try:
+                    
+                        unclaimed_df = pd.read_excel(
+                            io.BytesIO(file_content),
+                            sheet_name="Unclaimed Payment",
+                            dtype=str
+                        )
+                    
+                        unclaimed_df.columns = (
+                            unclaimed_df.columns
+                            .astype(str)
+                            .str.strip()
+                        )
+                    
+                        required_unclaimed_cols = [
+                            "BankName",
+                            "BankCode",
+                            "EFTNO",
+                            "Value",
+                            "BankRef"
+                        ]
+                    
+                        available_cols = [
+                            col for col in required_unclaimed_cols
+                            if col in unclaimed_df.columns
+                        ]
+                    
+                        unclaimed_df = unclaimed_df[available_cols]
+                    
+                        # Standardize merge keys
+                        df_temp["EFT/Cheque No to be Claimed"] = (
+                            df_temp["EFT/Cheque No to be Claimed"]
+                            .astype(str)
+                            .str.strip()
+                        )
+                    
+                        unclaimed_df["EFTNO"] = (
+                            unclaimed_df["EFTNO"]
+                            .astype(str)
+                            .str.strip()
+                        )
+                    
+                        # Merge
+                        df_temp = df_temp.merge(
+                            unclaimed_df,
+                            how="left",
+                            left_on="EFT/Cheque No to be Claimed",
+                            right_on="EFTNO"
+                        )
+                    
+                    except Exception as e:
+                        st.error(f"Error processing Unclaimed Payment sheet: {e}")
+                        st.stop()
                     break
 
                 except Exception:
@@ -310,32 +368,82 @@ if run_button:
 
         status_text.info("Generating output Excel file...")
         try:
-
-            final_df = final_df.rename(columns={
-        
-                "EFT Date": "DepositDate",
-                "EFT/Cheque No to be Claimed": "CheckNo",
-                "Client Code": "AccountCustomer",
-                "EFT Amount": "DepositAmount",
-                "Branch Remarks": "PaymentMethod",
-                "Invoice Number": "InvoiceNo",
-                "Branch": "SOLocn",
-                "Invoice Amount": "Inv Amt",
-                "Outstanding Amount (A)": "OutstandingAmount",
-                "TDS (B)": "TDSAmount",
-                "Deduction Amount (C)": "DeductionAmount",
-                "Payment": "CheckAmount",
-                "Deduction reason": "ReasonCode",
-                "TDS %": "TDS"
-        
-            })
-            # Duplicate columns from same source
-            if "AccountCustomer" in final_df.columns:
-                final_df["CustomerCode"] = final_df["AccountCustomer"]
-        
-        except Exception as e:
-            st.error(f"Error during final column renaming: {e}")
-            st.stop()
+    
+        final_df = final_df.rename(columns={
+    
+            "EFT Date": "DepositDate",
+            "EFT/Cheque No to be Claimed": "CheckNo",
+            "Client Code": "AccountCustomer",
+            "EFT Amount": "DepositAmount",
+            "Branch Remarks": "PaymentMethod",
+            "Invoice Number": "InvoiceNo",
+            "Branch": "SOLocn",
+            "Invoice Amount": "Inv Amt",
+            "Outstanding Amount (A)": "OutstandingAmount",
+            "TDS (B)": "TDSAmount",
+            "Deduction Amount (C)": "DeductionAmount",
+            "Payment": "CheckAmount",
+            "Deduction reason": "ReasonCode",
+            "TDS %": "TDS",
+    
+            "BankRef": "DepositSlipNo",
+            "BankName": "BankLocation",
+            "BankCode": "BankNo"
+    
+        })
+    
+        # Duplicate columns
+        if "AccountCustomer" in final_df.columns:
+            final_df["CustomerCode"] = final_df["AccountCustomer"]
+    
+        if "DepositSlipNo" in final_df.columns:
+            final_df["BankReference"] = final_df["DepositSlipNo"]
+    
+        # Final required order
+        final_order = [
+            "Company Code",
+            "DepositDate",
+            "BankReference",
+            "CheckNo",
+            "AccountCustomer",
+            "DepositAmount",
+            "CompanyLoc",
+            "InstrumentPrefix",
+            "PaymentMethod",
+            "DepositSlipNo",
+            "BankLocation",
+            "BankNo",
+            "CheckDate",
+            "CustomerCode",
+            "InvoiceNo",
+            "ARLocn",
+            "SOLocn",
+            "Inv Amt",
+            "OutstandingAmount",
+            "TDSAmount",
+            "DeductionAmount",
+            "TDS CGST",
+            "TDS SGST",
+            "TDS IGST",
+            "Retention Amount",
+            "CheckAmount",
+            "ReasonCode",
+            "TDS",
+            "Invoice_type"
+        ]
+    
+        # Create missing columns
+        for col in final_order:
+    
+            if col not in final_df.columns:
+                final_df[col] = ""
+    
+        # Reorder columns
+        final_df = final_df[final_order]
+    
+    except Exception as e:
+        st.error(f"Error during final processing: {e}")
+        st.stop()
 
         # Generate CSV output
         try:
