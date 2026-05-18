@@ -380,87 +380,87 @@ if run_button:
 
         status_text.info("Generating output Excel file...")
 
-        # try:
+        try:
     
-        #     final_df = final_df.rename(columns={
+            final_df = final_df.rename(columns={
         
-        #         "EFT Date": "DepositDate",
-        #         "EFT/Cheque No to be Claimed": "CheckNo",
-        #         "Client Code": "AccountCustomer",
-        #         "EFT Amount": "DepositAmount",
-        #         "Branch Remarks": "PaymentMethod",
-        #         "Invoice Number": "InvoiceNo",
-        #         "Branch": "SOLocn",
-        #         "Invoice Amount": "Inv Amt",
-        #         "Outstanding Amount (A)": "OutstandingAmount",
-        #         "TDS (B)": "TDSAmount",
-        #         "Deduction Amount (C)": "DeductionAmount",
-        #         "Payment": "CheckAmount",
-        #         "Deduction reason": "ReasonCode",
-        #         "TDS %": "TDS",
+                "EFT Date": "DepositDate",
+                "EFT/Cheque No to be Claimed": "CheckNo",
+                "Client Code": "AccountCustomer",
+                "EFT Amount": "DepositAmount",
+                "Branch Remarks": "PaymentMethod",
+                "Invoice Number": "InvoiceNo",
+                "Branch": "SOLocn",
+                "Invoice Amount": "Inv Amt",
+                "Outstanding Amount (A)": "OutstandingAmount",
+                "TDS (B)": "TDSAmount",
+                "Deduction Amount (C)": "DeductionAmount",
+                "Payment": "CheckAmount",
+                "Deduction reason": "ReasonCode",
+                "TDS %": "TDS",
         
-        #         "BankRef_unclaimed": "DepositSlipNo",
-        #         "BankName_unclaimed": "BankLocation",
-        #         "BankCode_unclaimed": "BankNo"
+                "BankRef_unclaimed": "DepositSlipNo",
+                "BankName_unclaimed": "BankLocation",
+                "BankCode_unclaimed": "BankNo"
         
-        #     })
+            })
 
             
         
-        #     # Duplicate columns
-        #     if "AccountCustomer" in final_df.columns:
-        #         final_df["CustomerCode"] = final_df["AccountCustomer"]
+            # Duplicate columns
+            if "AccountCustomer" in final_df.columns:
+                final_df["CustomerCode"] = final_df["AccountCustomer"]
         
-        #     if "DepositSlipNo" in final_df.columns:
-        #         final_df["BankReference"] = final_df["DepositSlipNo"]
+            if "DepositSlipNo" in final_df.columns:
+                final_df["BankReference"] = final_df["DepositSlipNo"]
         
-        #     # Final required order
-        #     final_order = [
-        #         "Company Code",
-        #         "DepositDate",
-        #         "BankReference",
-        #         "CheckNo",
-        #         "AccountCustomer",
-        #         "DepositAmount",
-        #         "CompanyLoc",
-        #         "InstrumentPrefix",
-        #         "PaymentMethod",
-        #         "DepositSlipNo",
-        #         "BankLocation",
-        #         "BankNo",
-        #         "CheckDate",
-        #         "CustomerCode",
-        #         "InvoiceNo",
-        #         "ARLocn",
-        #         "SOLocn",
-        #         "Inv Amt",
-        #         "OutstandingAmount",
-        #         "TDSAmount",
-        #         "DeductionAmount",
-        #         "TDS CGST",
-        #         "TDS SGST",
-        #         "TDS IGST",
-        #         "Retention Amount",
-        #         "CheckAmount",
-        #         "ReasonCode",
-        #         "TDS",
-        #         "Invoice_type"
-        #     ]
+            # Final required order
+            final_order = [
+                "Company Code",
+                "DepositDate",
+                "BankReference",
+                "CheckNo",
+                "AccountCustomer",
+                "DepositAmount",
+                "CompanyLoc",
+                "InstrumentPrefix",
+                "PaymentMethod",
+                "DepositSlipNo",
+                "BankLocation",
+                "BankNo",
+                "CheckDate",
+                "CustomerCode",
+                "InvoiceNo",
+                "ARLocn",
+                "SOLocn",
+                "Inv Amt",
+                "OutstandingAmount",
+                "TDSAmount",
+                "DeductionAmount",
+                "TDS CGST",
+                "TDS SGST",
+                "TDS IGST",
+                "Retention Amount",
+                "CheckAmount",
+                "ReasonCode",
+                "TDS",
+                "Invoice_type"
+            ]
         
-        #     # Create missing columns
-        #     for col in final_order:
+            # Create missing columns
+            for col in final_order:
         
-        #         if col not in final_df.columns:
-        #             final_df[col] = ""
+                if col not in final_df.columns:
+                    final_df[col] = ""
         
-        #     # Reorder columns
-        #     final_df = final_df[final_order]
+            # Reorder columns
+            final_df = final_df[final_order]
         
-        # except Exception as e:
-        #     st.error(f"Error during final processing: {e}")
-        #     st.stop()
+        except Exception as e:
+            st.error(f"Error during final processing: {e}")
+            st.stop()
 
-        # Generate CSV output
+        Generate CSV output
         try:
             output = io.StringIO()
         
