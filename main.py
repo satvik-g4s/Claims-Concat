@@ -246,20 +246,26 @@ if run_button:
                             subset=["EFTNO"]
                         )
 
-                        st.write("Claims EFT Sample:")
-                        st.write(
-                            df_temp["EFT/Cheque No to be Claimed"]
-                            .dropna()
-                            .astype(str)
-                            .head(10)
+                        st.text(
+                            "Claims EFT Sample:\n" +
+                            "\n".join(
+                                df_temp["EFT/Cheque No to be Claimed"]
+                                .dropna()
+                                .astype(str)
+                                .head(20)
+                                .tolist()
+                            )
                         )
                         
-                        st.write("Unclaimed EFTNO Sample:")
-                        st.write(
-                            unclaimed_df["EFTNO"]
-                            .dropna()
-                            .astype(str)
-                            .head(10)
+                        st.text(
+                            "Unclaimed EFTNO Sample:\n" +
+                            "\n".join(
+                                unclaimed_df["EFTNO"]
+                                .dropna()
+                                .astype(str)
+                                .head(20)
+                                .tolist()
+                            )
                         )
                         
                         # Merge
