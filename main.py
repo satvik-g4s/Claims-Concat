@@ -5,9 +5,9 @@ import time
 
 st.set_page_config(layout="wide")
 
-st.title("Excel File Concatenation Tool")
+st.title("Multi File Excel Concatenation Tool")
 
-st.markdown("### Upload Files")
+st.markdown("### Upload Excel Files")
 
 uploaded_files = st.file_uploader(
     "Upload Excel Files",
@@ -16,19 +16,28 @@ uploaded_files = st.file_uploader(
 )
 
 st.caption(
-    "Required columns: "
-    "Company Code, DepositDate, BankReference, CheckNo, AccountCustomer, "
-    "DepositAmount, CompanyLoc, InstrumentPrefix, PaymentMethod, DepositSlipNo, "
-    "BankLocation, BankNo, CheckDate, CustomerCode, InvoiceNo, CheckAmount, "
-    "TDSAmount, DeductionAmount, OutstandingAmount, ARLocn, SOLocn, "
-    "ReasonCode, TDS, Invoice_type"
+    """
+    Expected Structure:
+    - Each uploaded Excel file must contain a sheet whose name matches the first word
+      of the uploaded file name.
+    - Example:
+        File Name: ABC_Invoice.xlsx
+        Required Sheet Name: ABC
+
+    Required Columns:
+    Company Code, DepositDate, BankReference, CheckNo, AccountCustomer,
+    DepositAmount, CompanyLoc, InstrumentPrefix, PaymentMethod,
+    DepositSlipNo, BankLocation, BankNo, CheckDate, CustomerCode,
+    InvoiceNo, CheckAmount, TDSAmount, DeductionAmount,
+    OutstandingAmount, ARLocn, SOLocn, ReasonCode, TDS, Invoice_type
+    """
 )
 
 run_button = st.button("Run")
 
 log_container = st.container()
 
-# Define the list of columns to read
+# Define required columns
 columns_to_read = [
     'Company Code',
     'DepositDate',
@@ -56,7 +65,7 @@ columns_to_read = [
     'Invoice_type'
 ]
 
-# Create dtype mapping
+# Define dtype mapping
 dtype_mapping = {col: str for col in columns_to_read}
 
 if run_button:
@@ -69,7 +78,7 @@ if run_button:
             st.error("Please upload at least one Excel file.")
             st.stop()
 
-        status_text.info("Starting file processing...")
+        status_text.info("Starting processing...")
         time.sleep(0.5)
 
         df_list = []
@@ -80,32 +89,78 @@ if run_button:
 
         for i, file_obj in enumerate(uploaded_files):
 
-            status_text.info(f"Reading file {i + 1} of {total_files}...")
+            status_text.info(
+                f"Processing file {i + 1} of {total_files}: {file_obj.name}"
+            )
 
             try:
-                # Reset file pointer
-                file_obj.seek(0)
-
-                # Read Excel file
-                df_temp = pd.read_excel(
-                    file_obj,
-                    dtype=dtype_mapping
-                )
+                file_name_first_word_raw = file_obj.name.split('_')[0].strip().lower()
 
             except Exception as e:
-                st.error(f"Error reading file {file_obj.name}: {e}")
+                st.error(f"Error extracting filename from uploaded file: {e}")
                 st.stop()
 
-            # Header finder logic (checks first 10 rows)
+            try:
+                file_obj.seek(0)
+                file_content = file_obj.read()
+
+            except Exception as e:
+                st.error(f"Error reading uploaded file content: {e}")
+                st.stop()
+
+            # Read Excel file object
+            try:
+                excel_file = pd.ExcelFile(io.BytesIO(file_content))
+
+            except Exception as e:
+                st.error(f"Error opening Excel file {file_obj.name}: {e}")
+                st.stop()
+
+            # Fetch sheet names
+            try:
+                actual_sheet_names = excel_file.sheet_names
+
+            except Exception as e:
+                st.error(f"Error fetching sheet names from {file_obj.name}: {e}")
+                st.stop()
+
+            # Case-insensitive sheet matching
+            target_sheet_name = None
+
+            try:
+                for sheet_name in actual_sheet_names:
+                
+                    if str(sheet_name).strip().lower() == file_name_first_word_raw:
+                        target_sheet_name = sheet_name
+                        break
+
+            except Exception as e:
+                st.error(f"Error during sheet matching process: {e}")
+                st.stop()
+
+            # Validate sheet
+            if target_sheet_name is None:
+                st.error(
+                    f"No matching sheet found for '{file_name_first_word_raw}' "
+                    f"in file {file_obj.name}"
+                )
+                st.stop()
+
+            status_text.info(
+                f"Matched sheet '{target_sheet_name}' in file {file_obj.name}"
+            )
+
+            time.sleep(0.3)
+
+            # Header detection within first 10 rows
             header_found = False
 
             for row_num in range(10):
 
                 try:
-                    file_obj.seek(0)
-
                     temp_df = pd.read_excel(
-                        file_obj,
+                        io.BytesIO(file_content),
+                        sheet_name=target_sheet_name,
                         header=row_num,
                         dtype=dtype_mapping
                     )
@@ -120,7 +175,8 @@ if run_button:
 
             if not header_found:
                 st.error(
-                    f"Required headers not found within first 10 rows in file: {file_obj.name}"
+                    f"Required headers not found within first 10 rows "
+                    f"in file {file_obj.name}"
                 )
                 st.stop()
 
@@ -136,6 +192,7 @@ if run_button:
                 )
                 st.stop()
 
+            # Append dataframe
             try:
                 df_list.append(df_temp)
 
@@ -148,24 +205,35 @@ if run_button:
 
             time.sleep(0.3)
 
-        status_text.info("Concatenating all uploaded files...")
+        # Validate dataframe list
+        if not df_list:
+            st.error("No valid dataframes were processed.")
+            st.stop()
 
+        status_text.info("Concatenating all processed files...")
+
+        # Concatenate dataframes
         try:
             final_df = pd.concat(df_list, ignore_index=True)
 
         except Exception as e:
-            st.error(f"Error concatenating files: {e}")
+            st.error(f"Error concatenating dataframes: {e}")
             st.stop()
 
         time.sleep(0.5)
 
-        status_text.info("Preparing download file...")
+        status_text.info("Generating output Excel file...")
 
+        # Create output Excel
         try:
             output = io.BytesIO()
 
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                final_df.to_excel(writer, index=False, sheet_name='Combined_Data')
+                final_df.to_excel(
+                    writer,
+                    index=False,
+                    sheet_name='Combined_Data'
+                )
 
             output.seek(0)
 
@@ -174,7 +242,8 @@ if run_button:
             st.stop()
 
         status_text.success(
-            f"Processing completed successfully. Total rows combined: {len(final_df)}"
+            f"Processing completed successfully. "
+            f"Total combined rows: {len(final_df)}"
         )
 
         st.download_button(
@@ -184,63 +253,69 @@ if run_button:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-        st.markdown("### Preview of Combined Data")
+        st.markdown("### Combined Data Preview")
         st.dataframe(final_df.head())
 
-        st.markdown("### Data Types")
-        st.dataframe(
-            pd.DataFrame({
+        st.markdown("### Data Type Information")
+
+        try:
+            dtype_df = pd.DataFrame({
                 "Column": final_df.columns,
                 "Data Type": final_df.dtypes.astype(str)
             })
-        )
+
+            st.dataframe(dtype_df)
+
+        except Exception as e:
+            st.error(f"Error displaying datatype information: {e}")
+            st.stop()
 
 with st.expander("What This Tool Does"):
 
     st.write("""
-    This tool allows users to upload multiple Excel files containing deposit,
-    invoice, customer, and payment-related information.
+    This tool uploads multiple Excel files, validates sheet names,
+    reads the required columns, and concatenates all records into
+    a single consolidated output file.
 
-    All uploaded files are validated, cleaned, and concatenated into one
-    unified dataset for reporting and downstream processing.
+    The tool automatically detects the matching sheet based on
+    the uploaded file name.
     """)
 
 with st.expander("How to Use"):
 
     st.write("""
     1. Upload one or more Excel files.
-    2. Click the Run button.
-    3. Wait for processing to complete.
-    4. Download the combined output Excel file.
+    2. Ensure each file contains a matching sheet name.
+    3. Click Run.
+    4. Download the final combined Excel output.
     """)
 
 with st.expander("Output Details"):
 
     st.write("""
-    The generated output contains:
-
-    - Combined records from all uploaded files
+    The output file contains:
+    - Combined rows from all uploaded files
     - Standardized column structure
-    - Unified customer and invoice-level data
-    - Deposit and payment tracking information
+    - Customer and invoice level transaction details
+    - Payment and deduction information
+    - Unified financial reconciliation dataset
 
-    All uploaded files are merged row-wise into a single consolidated report.
+    All files are merged vertically into one master sheet.
     """)
 
 with st.expander("Financial Logic"):
 
     st.write("""
-    The tool combines customer payment and invoice records from multiple files
-    into one master dataset.
+    The process consolidates financial transaction records
+    across multiple uploaded files while preserving:
 
-    It preserves:
-    - Deposit references
-    - Invoice mappings
-    - TDS deductions
-    - Outstanding amounts
-    - Customer codes
+    - Deposit information
+    - Invoice references
+    - TDS values
+    - Outstanding balances
     - Payment methods
-    - Bank-related details
+    - Customer mappings
+    - Bank details
 
-    This helps in consolidated reconciliation and financial tracking.
+    This helps streamline reconciliation and financial reporting.
     """)
