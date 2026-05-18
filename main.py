@@ -229,14 +229,23 @@ if run_button:
                             df_temp["EFT/Cheque No to be Claimed"]
                             .astype(str)
                             .str.strip()
+                            .str.replace(".0", "", regex=False)
+                            .str.replace(" ", "", regex=False)
                         )
-                    
+                        
                         unclaimed_df["EFTNO"] = (
                             unclaimed_df["EFTNO"]
                             .astype(str)
                             .str.strip()
+                            .str.replace(".0", "", regex=False)
+                            .str.replace(" ", "", regex=False)
                         )
-                    
+                        
+                        # Remove duplicate EFTNO rows
+                        unclaimed_df = unclaimed_df.drop_duplicates(
+                            subset=["EFTNO"]
+                        )
+                        
                         # Merge
                         df_temp = df_temp.merge(
                             unclaimed_df,
