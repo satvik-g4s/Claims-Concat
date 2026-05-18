@@ -264,6 +264,54 @@ if run_button:
 
         status_text.info("Concatenating all processed files...")
 
+        # Remove rows where:
+        # 1. Entire row is null/blank
+        # AND
+        # 2. DeductionAmount is 0/blank
+        
+        try:
+        
+            final_df["DeductionAmount"] = (
+                final_df["DeductionAmount"]
+                .astype(str)
+                .str.replace(",", "", regex=False)
+                .str.strip()
+            )
+        
+            # Check if all columns except DeductionAmount are blank
+            other_cols = [
+                col for col in final_df.columns
+                if col != "DeductionAmount"
+            ]
+        
+            other_cols_blank = (
+                final_df[other_cols]
+                .fillna("")
+                .astype(str)
+                .apply(lambda x: x.str.strip())
+                .eq("")
+                .all(axis=1)
+            )
+        
+            deduction_zero = final_df["DeductionAmount"].isin([
+                "",
+                "0",
+                "0.0",
+                "0.00",
+                "nan",
+                "None"
+            ])
+        
+            # Remove only where BOTH conditions are true
+            final_df = final_df[
+                ~(other_cols_blank & deduction_zero)
+            ]
+        
+        except Exception as e:
+            st.error(f"Error filtering blank rows: {e}")
+            st.stop()
+        
+
         # Concatenate dataframes
         try:
             final_df = pd.concat(df_list, ignore_index=True)
