@@ -35,51 +35,23 @@ run_button = st.button("Run")
 log_container = st.container()
 
 # Final required output columns
-columns_to_read = [
-    'Company Code',
-    'DepositDate',
-    'BankReference',
-    'CheckNo',
-    'AccountCustomer',
-    'DepositAmount',
-    'CompanyLoc',
-    'InstrumentPrefix',
-    'PaymentMethod',
-    'DepositSlipNo',
-    'BankLocation',
-    'BankNo',
-    'CheckDate',
-    'CustomerCode',
-    'InvoiceNo',
-    'CheckAmount',
-    'TDSAmount',
-    'DeductionAmount',
-    'OutstandingAmount',
-    'ARLocn',
-    'SOLocn',
-    'ReasonCode',
-    'TDS',
-    'Invoice_type'
+# Final output columns
+final_output_columns = [
+    "EFT/Cheque No to be Claimed",
+    "EFT Amount",
+    "EFT Date",
+    "Invoice Number",
+    "Invoice Amount",
+    "Outstanding Amount (A)",
+    "Client Code",
+    "Client name",
+    "Invoice amount to be adjust",
+    "TDS (B)",
+    "Deduction Amount (C)",
+    "Deduction reason",
+    "TDS %",
+    "EFT Amount for Invoice (D)"
 ]
-
-# Source Column -> Output Column Mapping
-column_mapping_config = {
-    "EFT Date": "DepositDate",
-    "EFT/Cheque No to be Claimed": "CheckNo",
-    "Client Code": "AccountCustomer",
-    "EFT Amount": "DepositAmount",
-    "Branch Remarks": "PaymentMethod",
-    "Client Code": "CustomerCode",
-    "Invoice Number": "InvoiceNo",
-    "Deduction Amount (C)": "DeductionAmount",
-    "Outstanding Amount (A)": "OutstandingAmount",
-    "Branch": "SOLocn",
-    "Deduction reason": "ReasonCode",
-    "TDS %": "TDS",
-    "EFT Amount for Invoice (D)": "CheckAmount",
-    "TDS (B)": "TDSAmount"
-}
-
 if run_button:
 
     with log_container:
@@ -193,46 +165,26 @@ if run_button:
                         dtype=str
                     )
 
-                    # Create standardized dataframe
+                    # Create output dataframe
                     df_temp = pd.DataFrame()
-
-                    # Loop through final required columns
-                    for output_col in columns_to_read:
-
-                        source_col = None
-
-                        # Direct column match
+                    
+                    for output_col in final_output_columns:
+                    
+                        matched_col = None
+                    
                         for actual_col in temp_df.columns:
-
+                    
                             if (
                                 str(actual_col).strip().lower()
                                 == output_col.strip().lower()
                             ):
-                                source_col = actual_col
+                                matched_col = actual_col
                                 break
-
-                        # Mapping-based match
-                        if source_col is None:
-
-                            for source_name, mapped_name in column_mapping_config.items():
-
-                                if mapped_name == output_col:
-
-                                    for actual_col in temp_df.columns:
-
-                                        if (
-                                            str(actual_col).strip().lower()
-                                            == source_name.strip().lower()
-                                        ):
-                                            source_col = actual_col
-                                            break
-
-                        # Populate column
-                        if source_col is not None:
-                            df_temp[output_col] = temp_df[source_col]
+                    
+                        if matched_col is not None:
+                            df_temp[output_col] = temp_df[matched_col]
                         else:
                             df_temp[output_col] = ""
-
                     header_found = True
                     break
 
@@ -283,9 +235,9 @@ if run_button:
         try:
 
             amount_cols = [
-                "DeductionAmount",
-                "CheckAmount",
-                "TDSAmount"
+                "Deduction Amount (C)",
+                "EFT Amount for Invoice (D)",
+                "TDS (B)"
             ]
         
             # Standardize amount columns
