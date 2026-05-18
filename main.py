@@ -20,7 +20,7 @@ st.caption(
     Upload claims files for all locations here.
 
     Expected Structure:
-    - Each uploaded Excel file must contain a sheet whose name matches
+    - Each uploaded Excel file must contain the claims sheet whose name matches
       the first word of the uploaded file name (case-insensitive).
 
     Example:
