@@ -58,7 +58,8 @@ final_output_columns = [
     "BankName",
     "BankCode",
     "BankRef",
-    "EFTNO"
+    "EFTNO",
+    "Status"
 ]
 if run_button:
 
@@ -355,6 +356,22 @@ if run_button:
             final_df = final_df[
                 ~(other_cols_blank & amount_cols_zero_blank)
             ]
+            # Remove rows where Status = Done
+            try:
+            
+                if "Status" in final_df.columns:
+            
+                    final_df = final_df[
+                        final_df["Status"]
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        != "done"
+                    ]
+            
+            except Exception as e:
+                st.error(f"Error filtering Status rows: {e}")
+                st.stop()
         
         except Exception as e:
             st.error(f"Error filtering blank rows: {e}")
@@ -389,7 +406,6 @@ if run_button:
                 "EFT/Cheque No to be Claimed": "CheckNo",
                 "Client Code": "AccountCustomer",
                 "EFT Amount": "DepositAmount",
-                "Branch Remarks": "PaymentMethod",
                 "Invoice Number": "InvoiceNo",
                 "Branch": "SOLocn",
                 "Invoice Amount": "Inv Amt",
@@ -405,6 +421,8 @@ if run_button:
                 "BankCode_unclaimed": "BankNo"
         
             })
+            # Fill PaymentMethod with constant value
+            final_df["PaymentMethod"] = "Branch Remarks"
 
             
         
