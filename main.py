@@ -19,7 +19,7 @@ st.caption(
     """
     Expected Structure:
     - Each uploaded Excel file must contain a sheet whose name matches the first word
-      of the uploaded file name.
+      of the uploaded file name (case-insensitive).
     - Example:
         File Name: ABC_Invoice.xlsx
         Required Sheet Name: ABC
@@ -93,11 +93,13 @@ if run_button:
                 f"Processing file {i + 1} of {total_files}: {file_obj.name}"
             )
 
+            # Extract first word from filename
             try:
                 file_name_first_word_raw = (
                     file_obj.name
                     .replace(".xlsx", "")
                     .replace(".xls", "")
+                    .replace("_", " ")
                     .strip()
                     .split()[0]
                     .lower()
@@ -107,6 +109,7 @@ if run_button:
                 st.error(f"Error extracting filename from uploaded file: {e}")
                 st.stop()
 
+            # Read file content
             try:
                 file_obj.seek(0)
                 file_content = file_obj.read()
@@ -115,7 +118,7 @@ if run_button:
                 st.error(f"Error reading uploaded file content: {e}")
                 st.stop()
 
-            # Read Excel file object
+            # Open Excel file
             try:
                 excel_file = pd.ExcelFile(io.BytesIO(file_content))
 
@@ -123,7 +126,7 @@ if run_button:
                 st.error(f"Error opening Excel file {file_obj.name}: {e}")
                 st.stop()
 
-            # Fetch sheet names
+            # Get sheet names
             try:
                 actual_sheet_names = excel_file.sheet_names
 
@@ -131,13 +134,18 @@ if run_button:
                 st.error(f"Error fetching sheet names from {file_obj.name}: {e}")
                 st.stop()
 
-            # Case-insensitive sheet matching
+            # Match sheet name
             target_sheet_name = None
 
             try:
                 for sheet_name in actual_sheet_names:
-                
-                    if str(sheet_name).strip().lower() == file_name_first_word_raw:
+
+                    if (
+                        str(sheet_name)
+                        .strip()
+                        .lower()
+                        == file_name_first_word_raw
+                    ):
                         target_sheet_name = sheet_name
                         break
 
@@ -145,7 +153,7 @@ if run_button:
                 st.error(f"Error during sheet matching process: {e}")
                 st.stop()
 
-            # Validate sheet
+            # Validate matched sheet
             if target_sheet_name is None:
                 st.error(
                     f"No matching sheet found for '{file_name_first_word_raw}' "
@@ -162,6 +170,11 @@ if run_button:
             # Header detection within first 10 rows
             header_found = False
 
+            normalized_required_cols = [
+                str(col).strip().lower().replace("\n", " ")
+                for col in columns_to_read
+            ]
+
             for row_num in range(10):
 
                 try:
@@ -172,14 +185,41 @@ if run_button:
                         dtype=dtype_mapping
                     )
 
-                    if all(col in temp_df.columns for col in columns_to_read):
-                        df_temp = temp_df[columns_to_read]
+                    # Normalize dataframe columns
+                    normalized_temp_cols = [
+                        str(col).strip().lower().replace("\n", " ")
+                        for col in temp_df.columns
+                    ]
+
+                    # Mapping normalized -> original
+                    column_mapping = {
+                        str(col).strip().lower().replace("\n", " "): col
+                        for col in temp_df.columns
+                    }
+
+                    # Check all required columns exist
+                    if all(
+                        col in normalized_temp_cols
+                        for col in normalized_required_cols
+                    ):
+
+                        selected_original_cols = [
+                            column_mapping[col]
+                            for col in normalized_required_cols
+                        ]
+
+                        df_temp = temp_df[selected_original_cols]
+
+                        # Rename columns back to standard names
+                        df_temp.columns = columns_to_read
+
                         header_found = True
                         break
 
                 except Exception:
                     continue
 
+            # Validate header found
             if not header_found:
                 st.error(
                     f"Required headers not found within first 10 rows "
@@ -187,7 +227,7 @@ if run_button:
                 )
                 st.stop()
 
-            # Column validation
+            # Final column validation
             missing_cols = [
                 col for col in columns_to_read
                 if col not in df_temp.columns
@@ -231,7 +271,7 @@ if run_button:
 
         status_text.info("Generating output Excel file...")
 
-        # Create output Excel
+        # Generate output file
         try:
             output = io.BytesIO()
 
@@ -292,37 +332,37 @@ with st.expander("How to Use"):
 
     st.write("""
     1. Upload one or more Excel files.
-    2. Ensure each file contains a matching sheet name.
+    2. Ensure each file contains the required sheet.
     3. Click Run.
-    4. Download the final combined Excel output.
+    4. Download the final combined output file.
     """)
 
 with st.expander("Output Details"):
 
     st.write("""
-    The output file contains:
+    The output contains:
     - Combined rows from all uploaded files
     - Standardized column structure
-    - Customer and invoice level transaction details
+    - Customer transaction details
+    - Invoice references
     - Payment and deduction information
-    - Unified financial reconciliation dataset
+    - Consolidated financial dataset
 
-    All files are merged vertically into one master sheet.
+    All files are merged vertically into one master report.
     """)
 
 with st.expander("Financial Logic"):
 
     st.write("""
-    The process consolidates financial transaction records
-    across multiple uploaded files while preserving:
+    The process consolidates financial transaction records while preserving:
 
-    - Deposit information
-    - Invoice references
-    - TDS values
-    - Outstanding balances
-    - Payment methods
+    - Deposit references
     - Customer mappings
-    - Bank details
+    - Invoice numbers
+    - TDS and deduction values
+    - Outstanding balances
+    - Bank information
+    - Payment methods
 
-    This helps streamline reconciliation and financial reporting.
+    This supports reconciliation, reporting, and downstream finance operations.
     """)
