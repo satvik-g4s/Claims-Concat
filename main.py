@@ -94,7 +94,14 @@ if run_button:
             )
 
             try:
-                file_name_first_word_raw = file_obj.name.split('_')[0].strip().lower()
+                file_name_first_word_raw = (
+                    file_obj.name
+                    .replace(".xlsx", "")
+                    .replace(".xls", "")
+                    .strip()
+                    .split()[0]
+                    .lower()
+                )
 
             except Exception as e:
                 st.error(f"Error extracting filename from uploaded file: {e}")
