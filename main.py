@@ -269,14 +269,10 @@ if run_button:
             # Check all amount columns are blank/0
             amount_cols_zero_blank = (
                 final_df[amount_cols]
-                .isin([
-                    "",
-                    "0",
-                    "0.0",
-                    "0.00",
-                    "nan",
-                    "None"
-                ])
+                .replace(["", " ", "nan", "None", "<NA>"], "0")
+                .apply(pd.to_numeric, errors="coerce")
+                .fillna(0)
+                .eq(0)
                 .all(axis=1)
             )
         
